@@ -1,0 +1,3 @@
+ArrheniusHB.C
+
+LIB = $(FOAM_USER_LIBBIN)/libuserArrheniusHB

@@ -1,0 +1,1 @@
+../tempPowerLaw.H
