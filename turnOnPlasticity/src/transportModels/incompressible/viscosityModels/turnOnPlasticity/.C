@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "tempHerschelBukley.H"
+#include "tempPowerLaw.H"
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
 
@@ -33,12 +33,12 @@ namespace Foam
 {
 namespace viscosityModels
 {
-    defineTypeNameAndDebug(tempHerschelBukley, 0);
+    defineTypeNameAndDebug(tempPowerLaw, 0);
 
     addToRunTimeSelectionTable
     (
         viscosityModel,
-        tempHerschelBukley,
+        tempPowerLaw,
         dictionary
     );
 }
@@ -48,63 +48,38 @@ namespace viscosityModels
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
 Foam::tmp<Foam::volScalarField>
-Foam::viscosityModels::tempHerschelBukley::calcNu() const
+Foam::viscosityModels::tempPowerLaw::calcNu() const
 {
-
-	dimensionedScalar tone("tone", dimTime, 1.0);
-    dimensionedScalar rtone("rtone", dimless/dimTime, 1.0);
-	dimensionedScalar TVSMALL("VSMALL", dimTemperature, VSMALL);
-
-    tmp<volScalarField> sr(strainRate());
 	
 //inicio da edição
 	const volScalarField& T=U_.mesh().lookupObject<volScalarField>("T");
-
-	return
-	(
-		min
-        	(
-			nuMax_,
-			(tauTIAC_*(
-						exp(
-							STau_*(
-									scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TIAC_
-									)
-							-scalar(1.0)
-						)
-					) 
-			+ kTIAC_*(
-						exp(
-							kTau_*(
-									scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TIAC_
-									)
-							-scalar(1.0)
-							)
-						)
-					*rtone*pow(tone*sr(), n_)
-			+nuRef_*(
-						exp(
-							SNu_*(
-									scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TRef_
-									)
-							)
-						)
-					*sr()
-			)
-        	/(
-				max(
-					sr(), dimensionedScalar ("VSMALL", dimless/dimTime, VSMALL)
-					)
-		 	)
-			)
-    );
 //final da edição
+
+    return max
+    (
+        nuMin_,
+        min
+        (
+            nuMax_,
+//inicio da edição
+			(k_-kSlope_*(T-TBase_))*pow
+//final da edição
+            (
+                max
+                (
+                    dimensionedScalar("one", dimTime, 1.0)*strainRate(),
+                    dimensionedScalar("VSMALL", dimless, VSMALL)
+                ),
+                n_.value() - scalar(1.0)
+            )
+        )
+    );
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
+Foam::viscosityModels::tempPowerLaw::tempPowerLaw
 (
     const word& name,
     const dictionary& viscosityProperties,
@@ -113,19 +88,15 @@ Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
 )
 :
     viscosityModel(name, viscosityProperties, U, phi),
-    tempHerschelBukleyCoeffs_(viscosityProperties.subDict(typeName + "Coeffs")),
-//inicio da edição    
-	n_("n", dimless, tempHerschelBukleyCoeffs_),
-	tauTIAC_("tauTIAC", dimViscosity/dimTime, tempHerschelBukleyCoeffs_),
-	STau_("STau", dimTemperature, tempHerschelBukleyCoeffs_),
-	TIAC_("TIAC", dimTemperature, tempHerschelBukleyCoeffs_),
-	kTIAC_("kTIAC", dimViscosity, tempHerschelBukleyCoeffs_),
-	kTau_("kTau", dimTemperature, tempHerschelBukleyCoeffs_),
-	nuRef_("nuRef", dimViscosity, tempHerschelBukleyCoeffs_),	
-	SNu_("SNu", dimTemperature, tempHerschelBukleyCoeffs_),
-	TRef_("TRef", dimTemperature, tempHerschelBukleyCoeffs_),
-	nuMax_("nuMax", dimViscosity, tempHerschelBukleyCoeffs_),
+    tempPowerLawCoeffs_(viscosityProperties.subDict(typeName + "Coeffs")),
+    k_("k", dimViscosity, tempPowerLawCoeffs_),
+    n_("n", dimless, tempPowerLawCoeffs_),
+//inicio da edição
+	kSlope_(tempPowerLawCoeffs_.lookup("kSlope")),
+	TBase_(tempPowerLawCoeffs_.lookup("TBase")),
 //final da edição
+    nuMin_("nuMin", dimViscosity, tempPowerLawCoeffs_),
+    nuMax_("nuMax", dimViscosity, tempPowerLawCoeffs_),
     nu_
     (
         IOobject
@@ -143,27 +114,23 @@ Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-bool Foam::viscosityModels::tempHerschelBukley::read
+bool Foam::viscosityModels::tempPowerLaw::read
 (
     const dictionary& viscosityProperties
 )
 {
     viscosityModel::read(viscosityProperties);
 
-    tempHerschelBukleyCoeffs_ = viscosityProperties.subDict(typeName + "Coeffs");
+    tempPowerLawCoeffs_ = viscosityProperties.subDict(typeName + "Coeffs");
 
+    tempPowerLawCoeffs_.lookup("k") >> k_;
+    tempPowerLawCoeffs_.lookup("n") >> n_;
 //inicio da edição
-	tempHerschelBukleyCoeffs_.lookup("n") >> n_;
-	tempHerschelBukleyCoeffs_.lookup("tauTIAC") >> tauTIAC_;
-	tempHerschelBukleyCoeffs_.lookup("STau") >> STau_;
-	tempHerschelBukleyCoeffs_.lookup("TIAC") >> TIAC_;
-	tempHerschelBukleyCoeffs_.lookup("kTIAC") >> kTIAC_;
-	tempHerschelBukleyCoeffs_.lookup("kTau") >> kTau_;
-	tempHerschelBukleyCoeffs_.lookup("nuRef") >> nuRef_;
-	tempHerschelBukleyCoeffs_.lookup("SNu") >> SNu_;
-	tempHerschelBukleyCoeffs_.lookup("TRef") >> TRef_;
-	tempHerschelBukleyCoeffs_.lookup("nuMax") >> nuMax_;
+	tempPowerLawCoeffs_.lookup("kSlope") >> kSlope_;
+	tempPowerLawCoeffs_.lookup("TBase") >> TBase_;
 //final da edição
+    tempPowerLawCoeffs_.lookup("nuMin") >> nuMin_;
+    tempPowerLawCoeffs_.lookup("nuMax") >> nuMax_;
 
     return true;
 }

@@ -22,18 +22,18 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::viscosityModels::tempHerschelBukley
+    Foam::viscosityModels::turnOnPlasticity
 
 Description
      Standard power-law non-Newtonian viscosity model.
 
 SourceFiles
-    tempHerschelBukley.C
+    turnOnPlasticity.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef tempHerschelBukley_H
-#define tempHerschelBukley_H
+#ifndef turnOnPlasticity_H
+#define turnOnPlasticity_H
 
 #include "viscosityModel.H"
 #include "dimensionedScalar.H"
@@ -47,24 +47,25 @@ namespace viscosityModels
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class tempHerschelBukley Declaration
+                           Class turnOnPlasticity Declaration
 \*---------------------------------------------------------------------------*/
 
-class tempHerschelBukley
+class turnOnPlasticity
 :
     public viscosityModel
 {
     // Private data
 
-        dictionary tempHerschelBukleyCoeffs_;
+        dictionary turnOnPlasticityCoeffs_;
 
 //inicio da edição
 		dimensionedScalar n_;
-		dimensionedScalar tauTIAC_;
+		dimensionedScalar tauY_;
 		dimensionedScalar STau_;
-		dimensionedScalar TIAC_;
-		dimensionedScalar kTIAC_;
-		dimensionedScalar kTau_;
+		dimensionedScalar TYS_;
+		dimensionedScalar TPL_;
+		dimensionedScalar k_;
+		dimensionedScalar Sk_;
 		dimensionedScalar nuRef_;
 		dimensionedScalar SNu_;
 		dimensionedScalar TRef_;
@@ -83,13 +84,13 @@ class tempHerschelBukley
 public:
 
     //- Runtime type information
-    TypeName("tempHerschelBukley");
+    TypeName("turnOnPlasticity");
 
 
     // Constructors
 
         //- Construct from components
-        tempHerschelBukley
+        turnOnPlasticity
         (
             const word& name,
             const dictionary& viscosityProperties,
@@ -99,7 +100,7 @@ public:
 
 
     //- Destructor
-    ~tempHerschelBukley()
+    ~turnOnPlasticity()
     {}
 
 

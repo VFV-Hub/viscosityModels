@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2015 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -22,18 +22,21 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::viscosityModels::tempHerschelBukley
+    Foam::viscosityModels::Casson
 
 Description
-     Standard power-law non-Newtonian viscosity model.
+    An incompressible Bird-Carreau non-Newtonian viscosity model.
+
+    The Bird-Carreau-Yasuda form is also supported if the optional "a"
+    coefficient is specified.  "a" defaults to 2 for the Bird-Carreau model.
 
 SourceFiles
-    tempHerschelBukley.C
+    Casson.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef tempHerschelBukley_H
-#define tempHerschelBukley_H
+#ifndef Casson_H
+#define Casson_H
 
 #include "viscosityModel.H"
 #include "dimensionedScalar.H"
@@ -47,28 +50,22 @@ namespace viscosityModels
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class tempHerschelBukley Declaration
+                           Class Casson Declaration
 \*---------------------------------------------------------------------------*/
 
-class tempHerschelBukley
+class Casson
 :
     public viscosityModel
 {
     // Private data
 
-        dictionary tempHerschelBukleyCoeffs_;
+        dictionary CassonCoeffs_;
 
 //inicio da edição
-		dimensionedScalar n_;
-		dimensionedScalar tauTIAC_;
-		dimensionedScalar STau_;
-		dimensionedScalar TIAC_;
-		dimensionedScalar kTIAC_;
-		dimensionedScalar kTau_;
-		dimensionedScalar nuRef_;
-		dimensionedScalar SNu_;
-		dimensionedScalar TRef_;
-		dimensionedScalar nuMax_;		
+		dimensionedScalar m_;
+		dimensionedScalar tau0_;
+		dimensionedScalar nuMin_;
+		dimensionedScalar nuMax_;
 //final da edição
 
         volScalarField nu_;
@@ -83,13 +80,13 @@ class tempHerschelBukley
 public:
 
     //- Runtime type information
-    TypeName("tempHerschelBukley");
+    TypeName("Casson");
 
 
     // Constructors
 
         //- Construct from components
-        tempHerschelBukley
+        Casson
         (
             const word& name,
             const dictionary& viscosityProperties,
@@ -99,7 +96,7 @@ public:
 
 
     //- Destructor
-    ~tempHerschelBukley()
+    ~Casson()
     {}
 
 

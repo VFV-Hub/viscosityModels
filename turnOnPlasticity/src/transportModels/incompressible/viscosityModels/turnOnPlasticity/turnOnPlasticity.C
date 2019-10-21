@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "tempHerschelBukley.H"
+#include "turnOnPlasticity.H"
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
 
@@ -33,12 +33,12 @@ namespace Foam
 {
 namespace viscosityModels
 {
-    defineTypeNameAndDebug(tempHerschelBukley, 0);
+    defineTypeNameAndDebug(turnOnPlasticity, 0);
 
     addToRunTimeSelectionTable
     (
         viscosityModel,
-        tempHerschelBukley,
+        turnOnPlasticity,
         dictionary
     );
 }
@@ -48,7 +48,7 @@ namespace viscosityModels
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
 Foam::tmp<Foam::volScalarField>
-Foam::viscosityModels::tempHerschelBukley::calcNu() const
+Foam::viscosityModels::turnOnPlasticity::calcNu() const
 {
 
 	dimensionedScalar tone("tone", dimTime, 1.0);
@@ -65,19 +65,25 @@ Foam::viscosityModels::tempHerschelBukley::calcNu() const
 		min
         	(
 			nuMax_,
-			(tauTIAC_*(
-						exp(
-							STau_*(
-									scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TIAC_
-									)
+			(tauY_*(
+						max(
+							scalar(0.0),
+							exp(
+								STau_*(
+										scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TYS_
+										)
+								)
 							-scalar(1.0)
-						)
-					) 
-			+ kTIAC_*(
-						exp(
-							kTau_*(
-									scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TIAC_
-									)
+							)
+						) 
+			+ k_*(
+						max(
+							scalar(0.0),
+							exp(
+								Sk_*(
+										scalar(1.0)/max(T, TVSMALL)-scalar(1.0)/TPL_
+										)
+								)
 							-scalar(1.0)
 							)
 						)
@@ -104,7 +110,7 @@ Foam::viscosityModels::tempHerschelBukley::calcNu() const
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
+Foam::viscosityModels::turnOnPlasticity::turnOnPlasticity
 (
     const word& name,
     const dictionary& viscosityProperties,
@@ -113,18 +119,19 @@ Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
 )
 :
     viscosityModel(name, viscosityProperties, U, phi),
-    tempHerschelBukleyCoeffs_(viscosityProperties.subDict(typeName + "Coeffs")),
+    turnOnPlasticityCoeffs_(viscosityProperties.subDict(typeName + "Coeffs")),
 //inicio da edição    
-	n_("n", dimless, tempHerschelBukleyCoeffs_),
-	tauTIAC_("tauTIAC", dimViscosity/dimTime, tempHerschelBukleyCoeffs_),
-	STau_("STau", dimTemperature, tempHerschelBukleyCoeffs_),
-	TIAC_("TIAC", dimTemperature, tempHerschelBukleyCoeffs_),
-	kTIAC_("kTIAC", dimViscosity, tempHerschelBukleyCoeffs_),
-	kTau_("kTau", dimTemperature, tempHerschelBukleyCoeffs_),
-	nuRef_("nuRef", dimViscosity, tempHerschelBukleyCoeffs_),	
-	SNu_("SNu", dimTemperature, tempHerschelBukleyCoeffs_),
-	TRef_("TRef", dimTemperature, tempHerschelBukleyCoeffs_),
-	nuMax_("nuMax", dimViscosity, tempHerschelBukleyCoeffs_),
+	n_("n", dimless, turnOnPlasticityCoeffs_),
+	tauY_("tauY", dimViscosity/dimTime, turnOnPlasticityCoeffs_),
+	STau_("STau", dimTemperature, turnOnPlasticityCoeffs_),
+	TYS_("TYS", dimTemperature, turnOnPlasticityCoeffs_),
+	TPL_("TPL", dimTemperature, turnOnPlasticityCoeffs_),
+	k_("k", dimViscosity, turnOnPlasticityCoeffs_),
+	Sk_("Sk", dimTemperature, turnOnPlasticityCoeffs_),
+	nuRef_("nuRef", dimViscosity, turnOnPlasticityCoeffs_),	
+	SNu_("SNu", dimTemperature, turnOnPlasticityCoeffs_),
+	TRef_("TRef", dimTemperature, turnOnPlasticityCoeffs_),
+	nuMax_("nuMax", dimViscosity, turnOnPlasticityCoeffs_),
 //final da edição
     nu_
     (
@@ -143,26 +150,27 @@ Foam::viscosityModels::tempHerschelBukley::tempHerschelBukley
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-bool Foam::viscosityModels::tempHerschelBukley::read
+bool Foam::viscosityModels::turnOnPlasticity::read
 (
     const dictionary& viscosityProperties
 )
 {
     viscosityModel::read(viscosityProperties);
 
-    tempHerschelBukleyCoeffs_ = viscosityProperties.subDict(typeName + "Coeffs");
+    turnOnPlasticityCoeffs_ = viscosityProperties.subDict(typeName + "Coeffs");
 
 //inicio da edição
-	tempHerschelBukleyCoeffs_.lookup("n") >> n_;
-	tempHerschelBukleyCoeffs_.lookup("tauTIAC") >> tauTIAC_;
-	tempHerschelBukleyCoeffs_.lookup("STau") >> STau_;
-	tempHerschelBukleyCoeffs_.lookup("TIAC") >> TIAC_;
-	tempHerschelBukleyCoeffs_.lookup("kTIAC") >> kTIAC_;
-	tempHerschelBukleyCoeffs_.lookup("kTau") >> kTau_;
-	tempHerschelBukleyCoeffs_.lookup("nuRef") >> nuRef_;
-	tempHerschelBukleyCoeffs_.lookup("SNu") >> SNu_;
-	tempHerschelBukleyCoeffs_.lookup("TRef") >> TRef_;
-	tempHerschelBukleyCoeffs_.lookup("nuMax") >> nuMax_;
+	turnOnPlasticityCoeffs_.lookup("n") >> n_;
+	turnOnPlasticityCoeffs_.lookup("tauY") >> tauY_;
+	turnOnPlasticityCoeffs_.lookup("STau") >> STau_;
+	turnOnPlasticityCoeffs_.lookup("TYS") >> TYS_;
+	turnOnPlasticityCoeffs_.lookup("TPL") >> TPL_;
+	turnOnPlasticityCoeffs_.lookup("k") >> k_;
+	turnOnPlasticityCoeffs_.lookup("Sk") >> Sk_;
+	turnOnPlasticityCoeffs_.lookup("nuRef") >> nuRef_;
+	turnOnPlasticityCoeffs_.lookup("SNu") >> SNu_;
+	turnOnPlasticityCoeffs_.lookup("TRef") >> TRef_;
+	turnOnPlasticityCoeffs_.lookup("nuMax") >> nuMax_;
 //final da edição
 
     return true;
