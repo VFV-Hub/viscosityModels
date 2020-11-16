@@ -1,0 +1,8 @@
+myViscosityModels/myViscosityModel/myViscosityModel.C
+myViscosityModels/turnOnPlasticity2/turnOnPlasticity2.C
+
+transportModel/transportModel.C
+mySinglePhaseTransportModel/mySinglePhaseTransportModel.C
+
+LIB = $(FOAM_USER_LIBBIN)/libuserincompressibleTransportModels
+
